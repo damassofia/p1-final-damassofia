@@ -15,8 +15,8 @@ nodo_t *agregar_producto(nodo_t* lista, producto_t nuevo_producto)
 
     if (nuevo_nodo != NULL)
     {
-        nuevo_nodo->datos.codigo_producto = strdup(nuevo_producto.codigo_producto);
-        nuevo_nodo->datos.nombre_producto = strdup(nuevo_producto.nombre_producto);
+        nuevo_nodo->datos.codigo_producto = nuevo_producto.codigo_producto;
+        nuevo_nodo->datos.nombre_producto = nuevo_producto.nombre_producto;
         nuevo_nodo->datos.stock_actual = nuevo_producto.stock_actual;
         nuevo_nodo->datos.punto_reposicion = nuevo_producto.punto_reposicion;
         nuevo_nodo->siguiente = NULL;
@@ -41,7 +41,9 @@ nodo_t *agregar_producto(nodo_t* lista, producto_t nuevo_producto)
     }
     else
     {
-        //funcion q muestra mensaje de error: malloc fallo
+        fprintf(stderr, "Error: malloc fallo.");
+        free(nuevo_producto.codigo_producto);
+        free(nuevo_producto.nombre_producto);
     }
 
     return cabeza_resultado;
@@ -50,7 +52,7 @@ nodo_t *agregar_producto(nodo_t* lista, producto_t nuevo_producto)
 nodo_t *cargar_inventario(const char* nombre_archivo)
 {
     FILE* archivo = NULL;
-    Nodo_t* lista = NULL;
+    nodo_t* lista = NULL;
 
     archivo = fopen(nombre_archivo , "r");
 
@@ -60,7 +62,6 @@ nodo_t *cargar_inventario(const char* nombre_archivo)
 
         while(fgets(linea, sizeof(linea) , archivo) != NULL)
         {
-            //Al final de cada linea de texto agrega un terminador.
             linea[strcspn(linea , "\n")] = 0;
 
             char* codigo_producto = strtok(linea , ";");
@@ -76,16 +77,14 @@ nodo_t *cargar_inventario(const char* nombre_archivo)
                 nuevo_producto.stock_actual = atoi(stock_texto);
                 nuevo_producto.punto_reposicion = atoi(punto_repo_texto);
 
-                //Aun hay q implementar agregar producto a la lista enlazada.
                 lista = agregar_producto(lista, nuevo_producto);
             }
         }
         fclose(archivo);
-        //Aun hay q agregar alguna funcion para mostrar mensajes.
     }
     else
     {
-        //mostrar mensaje de error:
+        fprintf(stderr, "Error: no pudo abrirse el archivo.");
     }
     return lista;
 }
@@ -107,14 +106,24 @@ void procesar_transacciones(nodo_t** lista, const char* nombre_archivo)
             char* operacion = strtok(NULL , ";");
             char* cantidad_texto = strtok(NULL , ";");
 
+            int cantidad = atoi(cantidad_texto);
+
             nodo_t *producto = buscar_producto(*lista , codigo_producto);
 
+            if(producto != NULL)
+            {
+                transacciones(lista , producto, operacion, cantidad);
+            }
+            else
+            {
+                mensaje(3);
+            }
         }
         fclose(archivo);
     }
     else
     {
-       //Funcion de mensajs de error
+       fprintf(stderr, "Error: no pudo abrirse el archivo.\n");
     }
 }
 
@@ -136,7 +145,7 @@ nodo_t *buscar_producto(nodo_t *lista, char* codigo_producto)
     return producto_encontrado;
 }
 
-void transacciones(nodo_t **producto , char* operacion , int cantidad)
+void transacciones(nodo_t **lista , nodo_t *producto, char* operacion , int cantidad)
 {
     if(*operacion == 'E')
     {
@@ -144,23 +153,23 @@ void transacciones(nodo_t **producto , char* operacion , int cantidad)
     }
     else if(*operacion == 'S')
     {
-        salida_stock(producto , cantidad);
+        salida_stock(lista, producto , cantidad);
     }
 }
 
-void salida_stock(nodo_t *producto , int cantidad)
+void salida_stock(nodo_t **lista , nodo_t *producto , int cantidad)
 {
     if((producto->datos.stock_actual - cantidad) < 0)
     {
-        //stderr
+        fprintf(stderr , "No hay stock suficiente. \n");
     }
     else if((producto->datos.stock_actual - cantidad) == 0)
     {
-        //eliminar nodo
+        eliminar_producto(lista, producto->datos.codigo_producto);
     }
     else
     {
-        //nodifico el estado del nodo
+        producto->datos.stock_actual = producto->datos.stock_actual - cantidad;
     }
 }
 
@@ -169,3 +178,127 @@ void entrada_stock(nodo_t *producto , int cantidad)
     producto->datos.stock_actual = producto->datos.stock_actual + cantidad;
 }
 
+void eliminar_producto(nodo_t **lista , char* codigo_eliminar)
+{
+    if (*lista == NULL)
+    {
+        fprintf(stderr , "El Inventario esta vacio.\n");
+    }
+    nodo_t *actual = *lista;
+    nodo_t *anterior = NULL;
+    int buscado = 1;
+
+    while(actual != NULL && buscado != 0)
+    {
+        buscado = strcmp(actual->datos.codigo_producto, codigo_eliminar);
+        if (buscado != 0)
+        {
+            anterior = actual;
+            actual = actual->siguiente;
+        }
+    }
+
+    if (actual == NULL)
+    {
+        fprintf(stderr , "Producto no encontrado.\n");
+    }
+    if(actual != NULL)
+    {
+      if (anterior == NULL)
+      {
+          *lista = actual->siguiente;
+      }
+      else
+      {
+          anterior->siguiente = actual->siguiente;
+
+      }
+    }
+
+    if(actual != NULL)
+    {
+        free(actual->datos.codigo_producto);
+        free(actual->datos.nombre_producto);
+        free(actual);
+    }
+
+}
+
+void escribir_maestro(nodo_t* lista, const char* nombre_archivo)
+{
+    FILE *archivo = fopen(nombre_archivo , "w");
+
+    if(archivo != NULL)
+    {
+        if(lista == NULL)
+        {
+          fprintf(stderr, "El Inventario esta vacio.\n");
+        }
+        else
+        {
+            nodo_t *actual = lista;
+            while(actual != NULL)
+            {
+                fprintf(archivo, "%s;%s;%d;%d\n",
+                    actual->datos.codigo_producto,
+                    actual->datos.nombre_producto,
+                    actual->datos.stock_actual,
+                    actual->datos.punto_reposicion);
+
+                actual = actual -> siguiente;
+            }
+        }
+        fclose(archivo);
+    }
+    else
+    {
+        fprintf(stderr, "No se pudo abrir el archivo.");
+    }
+}
+
+void escribir_compras_urgentes(nodo_t* lista, const char* nombre_archivo)
+{
+    FILE *archivo = fopen(nombre_archivo , "w");
+
+    if(archivo != NULL)
+    {
+        if(lista == NULL)
+        {
+            fprintf(stderr , "El Inventario esta vacio.\n");
+        }
+        else
+        {
+            nodo_t *actual = lista;
+            while(actual != NULL)
+            {
+                if(actual->datos.stock_actual <= actual->datos.punto_reposicion)
+                {
+                    int faltante = actual->datos.punto_reposicion - actual->datos.stock_actual + 1;
+                    fprintf(archivo, "%s - %d\n", actual->datos.codigo_producto, faltante);
+                }
+
+                actual = actual -> siguiente;
+            }
+        }
+        fclose(archivo);
+    }
+    else
+    {
+        fprintf(stderr , "No se pudo abrir el archivo.");
+    }
+}
+
+void liberar_lista(nodo_t* lista)
+{
+    nodo_t* actual = lista;
+    nodo_t* siguiente;
+
+   while (actual != NULL)
+   {
+       siguiente = actual->siguiente;
+       free(actual->datos.codigo_producto);
+       free(actual->datos.nombre_producto);
+       free(actual);
+       actual = siguiente;
+   }
+}
