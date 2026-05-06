@@ -163,5 +163,3 @@ void escribir_compras_urgentes(nodo_t* lista, const char* nombre_archivo);
 void liberar_lista(nodo_t* lista);
 
 #endif
-
-#endif
