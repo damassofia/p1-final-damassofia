@@ -1,0 +1,15 @@
+TSN-891;Tensiometro Digital 24ml;963;98
+TSN-407;Tensiometro Digital 40ml;619;99
+VND-904;Venda Elastica 18ml;398;93
+VND-873;Venda Elastica 29ml;503;57
+VND-915;Venda Elastica 48ml;298;110
+TSN-798;Tensiometro Digital 1ml;795;57
+ABG-674;Aguja Hipodermica 39ml;939;90
+ABG-830;Aguja Hipodermica 32ml;776;69
+GZA-913;Gasa Esteril 31ml;147;60
+TMT-535;Termometro Infrarrojo 49ml;583;95
+TMT-151;Termometro Infrarrojo 24ml;830;84
+VND-902;Venda Elastica 18ml;392;75
+TMT-860;Termometro Infrarrojo 11ml;157;66
+GNT-373;Guantes de Latex 17ml;411;148
+ALC-675;Alcohol Etilico 70% 28ml;827;149
