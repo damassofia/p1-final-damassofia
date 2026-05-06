@@ -116,7 +116,7 @@ void procesar_transacciones(nodo_t** lista, const char* nombre_archivo)
             }
             else
             {
-                mensaje(3);
+                fprintf(stderr , "El producto no existe.\n");
             }
         }
         fclose(archivo);
